@@ -7,7 +7,6 @@ def check_response(response: Response):
     try:
         response.raise_for_status()
     except HTTPStatusError as exc:
-
         raise HTTPStatusError(
             message=f'Error response {exc.response.status_code} while requesting {exc.request.url!r}.\n'
                     f'Returned Response:\n'
