@@ -1,5 +1,6 @@
 import httpx
 
+from .helpers import build_url, build_params, validate_json
 from pyVTFirebase.exceptions import check_response
 
 
@@ -9,16 +10,17 @@ class Firestore:
     def __init__(self, api_key, project_id):
         self.api_key = api_key
         self.project_id = project_id
-        self.base_url = 'https://firestore.googleapis.com/v1/'
+        self.project_path = f"projects/{self.project_id}/databases/(default)/documents"
+        self.base_url = "https://firestore.googleapis.com/v1"
         self.header = {"Content-Type": "application/json; charset=UTF-8", "Authorization": None}
 
-    def get(self, idToken: str, path: str, fields: list = None) -> httpx.Response:
+    def get(self, idToken: str, path: str, mask: list = None) -> httpx.Response:
         """
         Gets the requested document or documents from a collection
 
         :param idToken: The Firebase Auth ID token for the application user making the request
         :param path: Document or Collection path
-        :param fields: List of document fields to request from document
+        :param mask: List of document fields to request from document
         :return: Request response form the Firebase REST API
 
         Path Example:
@@ -27,48 +29,94 @@ class Firestore:
             ["Company", "Role", "Name"]
         """
 
-        # Set to empty list if no fields are supplied. Httpx doesn't omits params whose values are None
-        if fields is None:
-            fields = []
-
-        url = self.base_url + f"projects/{self.project_id}/databases/(default)/documents/{path}"
+        url = build_url(self.base_url, self.project_path, path)
         self.header["Authorization"] = f"Bearer {idToken}"
-        params = {"key": self.api_key, "mask.fieldPaths": fields}
+        params = build_params(key=self.api_key, mask=mask)
         req = httpx.get(url=url, headers=self.header, params=params, timeout=3)
         check_response(response=req)
         return req
 
-    def document_batch_get(self, idToken: str, documents: list = None, fields: list = None) -> httpx.Response:
+    def batch_get(self, idToken: str, json_kwargs: dict = None) -> httpx.Response:
         """
-        Gets the requested documents from the database
+        Gets a group of requested documents from the database
 
         :param idToken: The Firebase Auth ID token for the application user making the request
-        :param documents: List of document path to request
-        :param fields: List of document fields to request from document
+        :param json_kwargs: Structured request parameters for the request body of the request
         :return: Request response form the Firebase REST API
 
-        Documents Example:
-            ["Credentials/Team/<UserID>", "Credentials/Team/<UserID>", "Accounts/Company/<ResourceID>"]
-        Fields Example:
-            ["Company", "Role"]
+        Example:
+            json_kwargs ->
+                {
+                    "documents": [
+                        string
+                    ],
+                    "mask": {
+                        object (DocumentMask)
+                    },
+
+                    // Union field consistency_selector can be only one of the following:
+                    "transaction": string,
+                    "newTransaction": {
+                        object (TransactionOptions)
+                    },
+                    "readTime": string
+                    // End of list of possible types for union field consistency_selector.
+                }
+
+        Links: -> https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet
         """
 
-        projectPath = f"projects/{self.project_id}/databases/(default)/documents"
-        data = {}
+        validate_json(json_text=json_kwargs)
 
-        if documents:
-            data["documents"] = [(projectPath + f"/{path}") for path in documents]
-        if fields:
-            data["mask"] = {
-                "fieldPaths": fields
-            }
-
-        url = self.base_url + projectPath + ':batchGet'
+        url = build_url(self.base_url, self.project_path, delimiter=":batchGet")
         self.header["Authorization"] = f"Bearer {idToken}"
-        params = {"key": self.api_key}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+        params = build_params(key=self.api_key)
+        req = httpx.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
         check_response(response=req)
         return req
 
-    def update(self, idToken: str):
-        pass
+    def create(self, idToken: str, collectionId: str, parent: str = None, documentId: str = None,
+               mask: list = None, json_kwargs: dict = None) -> httpx.Response:
+        """
+        Creates a new document in a collection
+
+        :param idToken: The Firebase Auth ID token for the application user making the request
+        :param collectionId: The name of the collection relative to parent to create a document
+        :param parent: The parent resource of the collection to create a document
+        :param documentId: Optional, self assigned document ID. If not specified, an ID will be assigned by Firebase.
+        :param mask: Optional, list of document fields to return from document creation. If not set, returns all fields.
+        :param json_kwargs: Structured request parameters for the request body of the request
+        :return: Request response form the Firebase REST API
+
+        Examples:
+            The request body contains an instance of a document
+
+            parent -> self.project_path + 'Accounts/Company/Employees/...'
+
+            json_kwargs ->
+                {
+                    "name": string,
+                    "fields": {
+                        string: {
+                            object (Value)
+                        },
+                        ...
+                    },
+                    "createTime": string,
+                    "updateTime": string
+                }
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/createDocument
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents#Document
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Value
+        """
+
+        validate_json(json_text=json_kwargs)
+
+        url = build_url(self.base_url, self.project_path, parent, collectionId)
+        self.header["Authorization"] = f"Bearer {idToken}"
+        params = build_params(key=self.api_key, documentId=documentId, mask=mask)
+        req = httpx.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
+        check_response(response=req)
+        return req
