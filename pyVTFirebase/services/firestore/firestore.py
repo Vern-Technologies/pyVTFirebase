@@ -23,10 +23,14 @@ class Firestore:
         :param mask: List of document fields to request from document
         :return: Request response form the Firebase REST API
 
-        Path Example:
-            "Credentials/Team/<UserID>"
-        Fields Example:
-            ["Company", "Role", "Name"]
+        Examples:
+            path ->
+                "Credentials/Team/<UserID>"
+            mask ->
+                ["Company", "Role", "Name"]
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/get
         """
 
         url = build_url(self.base_url, self.project_path, path)
@@ -54,19 +58,20 @@ class Firestore:
                         object (DocumentMask)
                     },
 
-                    // Union field consistency_selector can be only one of the following:
+                    // Union field can be only one of the following:
                     "transaction": string,
                     "newTransaction": {
                         object (TransactionOptions)
                     },
                     "readTime": string
-                    // End of list of possible types for union field consistency_selector.
+                    // End of list of possible types for union field.
                 }
 
-        Links: -> https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/batchGet
         """
 
-        validate_json(json_text=json_kwargs)
+        validate_json(json_kwargs)
 
         url = build_url(self.base_url, self.project_path, delimiter=":batchGet")
         self.header["Authorization"] = f"Bearer {idToken}"
@@ -91,9 +96,12 @@ class Firestore:
         Examples:
             The request body contains an instance of a document
 
-            parent -> self.project_path + 'Accounts/Company/Employees/...'
-
+            parent ->
+                'Accounts/Company/Employees/...'
+            mask ->
+                ["Company", "Role", "Name"]
             json_kwargs ->
+                // Document instance
                 {
                     "name": string,
                     "fields": {
@@ -112,7 +120,7 @@ class Firestore:
             https://firebase.google.com/docs/firestore/reference/rest/v1/Value
         """
 
-        validate_json(json_text=json_kwargs)
+        validate_json(json_kwargs)
 
         url = build_url(self.base_url, self.project_path, parent, collectionId)
         self.header["Authorization"] = f"Bearer {idToken}"
@@ -120,3 +128,101 @@ class Firestore:
         req = httpx.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
         check_response(response=req)
         return req
+
+    def delete(self, idToken: str, path: str, precondition: dict = None) -> httpx.Response:
+        """
+        Deletes the requested document from a collection
+
+        :param idToken: The Firebase Auth ID token for the application user making the request
+        :param path: Document path
+        :param precondition: Optional, precondition on the document. The request will fail if the precondition isn't
+                             met by the target document.
+        :return: Request response form the Firebase REST API
+
+        Example:
+            path ->
+                'Accounts/Company/Employees/...'
+            precondition ->
+                // Precondition instance
+                {
+                  // Union field can be only one of the following:
+                  "exists": boolean,
+                  "updateTime": string
+                  // End of list of possible types for union field.
+                }
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/delete
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Precondition
+        """
+
+        validate_json(precondition)
+
+        url = build_url(self.base_url, self.project_path, path)
+        self.header["Authorization"] = f"Bearer {idToken}"
+        params = build_params(key=self.api_key, currentDocument=precondition)
+        req = httpx.delete(url=url, headers=self.header, params=params, timeout=3)
+        check_response(response=req)
+        return req
+
+    def patch(self, idToken: str, path: str, updateMask: list = None, mask: list = None,
+              precondition: dict = None, json_kwargs: dict = None) -> httpx.Response:
+        """
+        Updates or optional creates a document
+
+        :param idToken: The Firebase Auth ID token for the application user making the request
+        :param path: Document path
+        :param updateMask: Optional, list of document fields to update. If the document exists on the server and has
+                           fields not referenced in the mask, they are left unchanged. Fields referenced in the mask,
+                           but not present in the input document, are deleted from the document on the server.
+        :param mask: Optional, list of document fields to return from document. If not set, returns all fields.
+        :param precondition: Optional, precondition on the document. The request will fail if the precondition isn't
+                             met by the target document. Precondition must be None to create a document.
+        :param json_kwargs: Structured request parameters for the request body of the request
+        :return: Request response form the Firebase REST API
+
+        Example:
+            path ->
+                'Accounts/Company/Employees/...'
+            updateMask ->
+                ["Company", "Role", "Name"]
+            mask ->
+                ["Company", "Position"]
+            precondition ->
+                // Precondition instance
+                {
+                  // Union field can be only one of the following:
+                  "exists": boolean,
+                  "updateTime": string
+                  // End of list of possible types for union field.
+                }
+            json_kwargs ->
+                // Document instance
+                {
+                    "name": string,
+                    "fields": {
+                        string: {
+                            object (Value)
+                        },
+                        ...
+                    },
+                    "createTime": string,
+                    "updateTime": string
+                }
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/patch
+            https://firebase.google.com/docs/firestore/reference/rest/v1/DocumentMask
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Precondition
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents#Document
+        """
+
+        validate_json(precondition, json_kwargs)
+
+        url = build_url(self.base_url, self.project_path, path)
+        self.header["Authorization"] = f"Bearer {idToken}"
+        params = build_params(key=self.api_key, updateMask=updateMask, mask=mask, currentDocument=precondition)
+        req = httpx.patch(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
+        check_response(response=req)
+        return req
+

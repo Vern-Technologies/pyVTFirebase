@@ -27,24 +27,30 @@ def build_params(**kwargs) -> dict:
 
     params = {}
 
-    for key in kwargs:
-        if kwargs.get(key) is not None:
-            ident = key
+    for _key in kwargs:
+        if kwargs.get(_key) is not None:
+            _keyResults = kwargs.get(_key)
+            if isinstance(_keyResults, dict):
+                for internalKey in _keyResults:
+                    if _key == "currentDocument":
+                        params[f"currentDocument.{internalKey}"] = _keyResults.get(internalKey)
+            else:
+                if _key in ["mask", "updateMask"]:
+                    _key += ".fieldPaths"
 
-            if ident == "mask":
-                ident = "mask.fieldPaths"
-
-            params[ident] = kwargs.get(key)
+                params[_key] = _keyResults
 
     return params
 
 
-def validate_json(json_text: dict):
-    if isinstance(input, dict):
-        try:
-            return json.loads(str(json_text))
-        except Exception as e:
-            raise ValueError(f"Invalid json: {e}")
+def validate_json(*args: dict):
+
+    for _sub in args:
+        if isinstance(_sub, dict):
+            try:
+                return json.loads(json.dumps(_sub))
+            except Exception as e:
+                raise ValueError(f"Invalid json: {e}")
 
 
 def build_body(**kwargs) -> dict:
