@@ -44,7 +44,6 @@ def build_params(**kwargs) -> dict:
 
 
 def validate_json(*args: dict):
-
     for _sub in args:
         if isinstance(_sub, dict):
             try:

@@ -2,23 +2,29 @@ import httpx
 
 from .helpers import build_url, build_params, validate_json
 from pyVTFirebase.exceptions import check_response
+from pyVTFirebase.services.auth import Auth
 
 
 class Firestore:
     """ Firestore Management Service """
 
-    def __init__(self, api_key, project_id):
+    def __init__(self, api_key: str, project_id: str, id_token: str):
         self.api_key = api_key
         self.project_id = project_id
-        self.project_path = f"projects/{self.project_id}/databases/(default)/documents"
-        self.base_url = "https://firestore.googleapis.com/v1"
-        self.header = {"Content-Type": "application/json; charset=UTF-8", "Authorization": None}
+        self.id_token = id_token
+        self.base_url = f"https://firestore.googleapis.com/v1/projects/{self.project_id}/databases/(default)/documents"
+        self.header = {"Content-Type": "application/json; charset=UTF-8", "Authorization": f"Bearer {self.id_token}"}
 
-    def get(self, idToken: str, path: str, mask: list = None) -> httpx.Response:
+    def refresh_id_token(self, refresh_token: str):
+
+        auth = Auth(api_key=self.api_key)
+        access = auth.exchange_refresh_token_for_ID_token(refresh_token=refresh_token).json()
+        self.id_token = access["id_token"]
+
+    def get(self, path: str, mask: list = None) -> httpx.Response:
         """
         Gets the requested document or documents from a collection
 
-        :param idToken: The Firebase Auth ID token for the application user making the request
         :param path: Document or Collection path
         :param mask: List of document fields to request from document
         :return: Request response form the Firebase REST API
@@ -33,18 +39,16 @@ class Firestore:
             https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/get
         """
 
-        url = build_url(self.base_url, self.project_path, path)
-        self.header["Authorization"] = f"Bearer {idToken}"
+        url = build_url(self.base_url, path)
         params = build_params(key=self.api_key, mask=mask)
         req = httpx.get(url=url, headers=self.header, params=params, timeout=3)
         check_response(response=req)
         return req
 
-    def batch_get(self, idToken: str, json_kwargs: dict = None) -> httpx.Response:
+    def batch_get(self, json_kwargs: dict = None) -> httpx.Response:
         """
         Gets a group of requested documents from the database
 
-        :param idToken: The Firebase Auth ID token for the application user making the request
         :param json_kwargs: Structured request parameters for the request body of the request
         :return: Request response form the Firebase REST API
 
@@ -73,19 +77,17 @@ class Firestore:
 
         validate_json(json_kwargs)
 
-        url = build_url(self.base_url, self.project_path, delimiter=":batchGet")
-        self.header["Authorization"] = f"Bearer {idToken}"
+        url = build_url(self.base_url, delimiter=":batchGet")
         params = build_params(key=self.api_key)
         req = httpx.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
         check_response(response=req)
         return req
 
-    def create(self, idToken: str, collectionId: str, parent: str = None, documentId: str = None,
+    def create(self, collectionId: str, parent: str = None, documentId: str = None,
                mask: list = None, json_kwargs: dict = None) -> httpx.Response:
         """
         Creates a new document in a collection
 
-        :param idToken: The Firebase Auth ID token for the application user making the request
         :param collectionId: The name of the collection relative to parent to create a document
         :param parent: The parent resource of the collection to create a document
         :param documentId: Optional, self assigned document ID. If not specified, an ID will be assigned by Firebase.
@@ -122,18 +124,16 @@ class Firestore:
 
         validate_json(json_kwargs)
 
-        url = build_url(self.base_url, self.project_path, parent, collectionId)
-        self.header["Authorization"] = f"Bearer {idToken}"
+        url = build_url(self.base_url, parent, collectionId)
         params = build_params(key=self.api_key, documentId=documentId, mask=mask)
         req = httpx.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
         check_response(response=req)
         return req
 
-    def delete(self, idToken: str, path: str, precondition: dict = None) -> httpx.Response:
+    def delete(self, path: str, precondition: dict = None) -> httpx.Response:
         """
         Deletes the requested document from a collection
 
-        :param idToken: The Firebase Auth ID token for the application user making the request
         :param path: Document path
         :param precondition: Optional, precondition on the document. The request will fail if the precondition isn't
                              met by the target document.
@@ -158,19 +158,17 @@ class Firestore:
 
         validate_json(precondition)
 
-        url = build_url(self.base_url, self.project_path, path)
-        self.header["Authorization"] = f"Bearer {idToken}"
+        url = build_url(self.base_url, path)
         params = build_params(key=self.api_key, currentDocument=precondition)
         req = httpx.delete(url=url, headers=self.header, params=params, timeout=3)
         check_response(response=req)
         return req
 
-    def patch(self, idToken: str, path: str, updateMask: list = None, mask: list = None,
+    def patch(self, path: str, updateMask: list = None, mask: list = None,
               precondition: dict = None, json_kwargs: dict = None) -> httpx.Response:
         """
         Updates or optional creates a document
 
-        :param idToken: The Firebase Auth ID token for the application user making the request
         :param path: Document path
         :param updateMask: Optional, list of document fields to update. If the document exists on the server and has
                            fields not referenced in the mask, they are left unchanged. Fields referenced in the mask,
@@ -219,10 +217,48 @@ class Firestore:
 
         validate_json(precondition, json_kwargs)
 
-        url = build_url(self.base_url, self.project_path, path)
-        self.header["Authorization"] = f"Bearer {idToken}"
+        url = build_url(self.base_url, path)
         params = build_params(key=self.api_key, updateMask=updateMask, mask=mask, currentDocument=precondition)
         req = httpx.patch(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
         check_response(response=req)
         return req
 
+    def list(self, collectionId: str, parent: str = None, pageSize: int = None, pageToken: str = None,
+             orderBy: str = None, mask: list = None, showMissing: bool = False,
+             transaction: str = None, readTime: str = None):
+        """
+        Gets a list of documents from a collection
+
+        :param collectionId: The name of the collection relative to parent to create a document
+        :param parent: The parent resource of the collection to create a document
+        :param pageSize: The maximum number of documents to return
+        :param pageToken: The nextPageToken value returned from a previous List request, if any
+        :param orderBy: The order to sort results by
+        :param mask: Optional, list of document fields to return from document. If not set, returns all fields.
+        :param showMissing: If the list should show missing documents. A missing document is a document that does not
+                            exist bys has sub-documents. These documents will be returned with a key but will not
+                            have fields. Request with showMissing may not specify orderBy.
+        :param transaction: A base64-encoded transaction string
+        :param readTime: Reads documents as they were at the given time. May not be older than 270 seconds.
+        :return: Request response form the Firebase REST API
+
+        Examples:
+             parent ->
+                'Accounts/Company/Employees/...'
+            mask ->
+                ["Company", "Position"]
+           readTime ->
+                "2021-07-02T15:01:23Z"
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/list
+            https://firebase.google.com/docs/firestore/reference/rest/v1/DocumentMask
+            https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+        """
+
+        url = build_url(self.base_url, parent, collectionId)
+        params = build_params(pageSize=pageSize, pageToken=pageToken, orderBy=orderBy, mask=mask,
+                              showMissing=showMissing, transaction=transaction, readTime=readTime)
+        req = httpx.get(url, headers=self.header, params=params, timeout=3)
+        check_response(response=req)
+        return req
