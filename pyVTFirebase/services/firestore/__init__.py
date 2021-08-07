@@ -1,1 +1,2 @@
-from .firestore import Firestore
+
+from .query import Query

@@ -18,7 +18,7 @@ def build_url(*args, delimiter: str = None) -> str:
                 raise ValueError("Argument is not of type string")
 
     if delimiter:
-        url += delimiter
+        url += f":{delimiter}"
 
     return url
 

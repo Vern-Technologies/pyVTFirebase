@@ -1,14 +1,16 @@
 import httpx
 
 from pyVTFirebase.exceptions import check_response
+from pyVTFirebase.services.helpers import build_url, build_params
 
 
 class Auth:
     """ Authentication and User Management Service """
 
-    def __init__(self, api_key):
+    def __init__(self, api_key: str, client: httpx.Client):
         self.api_key = api_key
-        self.base_url = 'https://identitytoolkit.googleapis.com/v1/accounts:'
+        self.client = client
+        self.base_url = 'https://identitytoolkit.googleapis.com/v1/accounts'
         self.header = {"Content-Type": "application/json; charset=UTF-8"}
 
     def exchange_custom_for_ID_and_refresh_token(self, token: str) -> httpx.Response:
@@ -19,10 +21,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'signInWithCustomToken'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="signInWithCustomToken")
+        params = build_params(key=self.api_key)
         data = {'token': token, 'returnSecureToken': True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -47,9 +52,12 @@ class Auth:
         """
 
         url = 'https://securetoken.googleapis.com/v1/token'
-        params = {'key': self.api_key}
+        params = build_params(key=self.api_key)
         data = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -62,10 +70,14 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'signUp'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="signUp")
+        params = build_params(key=self.api_key)
         data = {'email': email, 'password': password, 'returnSecureToken': True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        check_response(response=req)
         return req
 
     def signIn_with_email_and_password(self, email: str, password: str) -> httpx.Response:
@@ -82,10 +94,13 @@ class Auth:
             . USER_DISABLED: The user account has been disabled by an administrator.
         """
 
-        url = self.base_url + 'signInWithPassword'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="signInWithPassword")
+        params = build_params(key=self.api_key)
         data = {"email": email, "password": password, "returnSecureToken": True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -97,10 +112,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'signUp'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="signUp")
+        params = build_params(key=self.api_key)
         data = {'returnSecureToken': True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -113,10 +131,13 @@ class Auth:
         :return: Request response form the Firebase REST API
         """
 
-        url = self.base_url + 'createAuthUri'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="createAuthUri")
+        params = build_params(key=self.api_key)
         data = {'identifier': email, 'continueUri': continueUri}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -128,10 +149,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'sendOobCode'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="sendOobCode")
+        params = build_params(key=self.api_key)
         data = {"requestType": "PASSWORD_RESET", "email": email}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -143,10 +167,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'resetPassword'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="resetPassword")
+        params = build_params(key=self.api_key)
         data = {'oobCode': oobCode}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -167,10 +194,13 @@ class Auth:
             . WEEK_PASSWORD: The password provided isn't strong enough
         """
 
-        url = self.base_url + 'resetPassword'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="resetPassword")
+        params = build_params(key=self.api_key)
         data = {'oobCode': oobCode, 'newPassword': newPassword}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -183,10 +213,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'update'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="update")
+        params = build_params(key=self.api_key)
         data = {'idToken': idToken, 'email': email, 'returnSecureToken': True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -199,10 +232,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'update'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="update")
+        params = build_params(key=self.api_key)
         data = {'idToken': idToken, 'password': password, 'returnSecureToken': True}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -221,10 +257,13 @@ class Auth:
             . INVALID_ID_TOKEN: The user's credential is no longer valid. The user must sign in again.
         """
 
-        url = self.base_url + 'update'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="update")
+        params = build_params(key=self.api_key)
         data = {'idToken': idToken} | {x: kwargs[x] for x in kwargs}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -236,10 +275,13 @@ class Auth:
         :return: Request response form the Firebase REST API
         """
 
-        url = self.base_url + 'lookup'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="lookup")
+        params = build_params(key=self.api_key)
         data = {'idToken': idToken}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -251,10 +293,13 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'sendOobCode'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="sendOobCode")
+        params = build_params(key=self.api_key)
         data = {"requestType": "VERIFY_EMAIL", "idToken": idToken}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -273,10 +318,13 @@ class Auth:
             . EMAIL_NOT_FOUND: There is no user record corresponding to this identifier. The user may have been deleted.
         """
 
-        url = self.base_url + 'update'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="update")
+        params = build_params(key=self.api_key)
         data = {'oobCode': oobCode}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
 
@@ -288,9 +336,12 @@ class Auth:
         :return: Request response from the Firebase REST API
         """
 
-        url = self.base_url + 'delete'
-        params = {'key': self.api_key}
+        url = build_url(self.base_url, delimiter="delete")
+        params = build_params(key=self.api_key)
         data = {'idToken': idToken}
-        req = httpx.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
+        with self.client as request:
+            req = request.post(url=url, headers=self.header, params=params, json=data, timeout=3)
+
         check_response(response=req)
         return req
