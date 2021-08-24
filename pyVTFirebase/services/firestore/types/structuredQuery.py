@@ -1,11 +1,12 @@
 
 import json
 
-from typing import Iterable
+from json import JSONEncoder
+from typing import Any, Tuple
 
 
 class StructuredQuery:
-    r"""A Firestore query.
+    """A Firestore query.
 
         select (google.cloud.firestore_v1.types.StructuredQuery.Projection):
             The projection to return.
@@ -50,23 +51,29 @@ class StructuredQuery:
     """
 
     class FieldReference:
+        """
+        Defines a reference to a document field
+        """
 
         def __init__(self, field_path: str = None):
             self._field_path = field_path
 
         def __repr__(self):
-            return f'{{"fieldPath": {self._field_path}}}'
+            return json.dumps({"fieldPath": self._field_path})
 
         def data(self):
             return {"fieldPath": self._field_path}
 
     class Projection:
+        """
+        Defines a project of document fields to return
+        """
 
         def __init__(self, fields: list = None):
-            self._fields: list = fields
+            self._fields = fields
 
         def __repr__(self):
-            return f'{{"fields": {self._fields}}}'
+            return json.dumps(({"fields": self._fields}))
 
         @property
         def fields(self):
@@ -82,13 +89,23 @@ class StructuredQuery:
             return {"fields": self._fields}
 
     class CollectionSelector:
+        """
+        Defines a selection of a collection
+        """
 
-        def __init__(self, collections: list = None):
+        def __init__(self, collections: Tuple = None):
             self._collections = collections
 
         def __repr__(self):
-            data = [{"collectionId": coll[0], "allDescendants": coll[1]} for coll in self._collections]
-            return json.dumps(data)
+            return json.dumps([{"collectionId": self._collections[0], "allDescendants": self._collections[1]}])
 
         def data(self):
-            return [{"collectionId": coll[0], "allDescendants": coll[1]} for coll in self._collections]
+            return [{"collectionId": self._collections[0], "allDescendants": self._collections[1]}]
+
+    class StructuredQueryEncoder(JSONEncoder):
+        """
+        Custom JSON encoder to validate data to serializable JSON
+        """
+
+        def default(self, o: Any) -> Any:
+            return o.data()

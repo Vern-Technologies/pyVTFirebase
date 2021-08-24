@@ -2,6 +2,9 @@
 import json
 import datetime
 
+from pyVTFirebase.services.firestore.types.query import Query
+from typing import Union
+
 
 def build_url(*args, delimiter: str = None) -> str:
 
@@ -43,13 +46,15 @@ def build_params(**kwargs) -> dict:
     return params
 
 
-def validate_json(*args: dict):
+def validate_json(*args: Union[dict, Query]):
     for _sub in args:
-        if isinstance(_sub, dict):
-            try:
+        try:
+            if isinstance(_sub, dict):
                 return json.loads(json.dumps(_sub))
-            except Exception as e:
-                raise ValueError(f"Invalid json: {e}")
+            elif isinstance(_sub, Query):
+                return json.loads(json.dumps(_sub.to_json()))
+        except Exception as e:
+            raise ValueError(f"Invalid json: {e}")
 
 
 def build_body(**kwargs) -> dict:

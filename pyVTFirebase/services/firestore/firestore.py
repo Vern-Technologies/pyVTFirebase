@@ -3,8 +3,9 @@ import httpx
 from pyVTFirebase.services.helpers import build_url, build_params, validate_json
 from pyVTFirebase.exceptions import check_response
 from pyVTFirebase.services.auth import Auth
+from pyVTFirebase.services.firestore.types.query import Query
 
-from .query import Query
+from typing import Union
 
 
 class Firestore:
@@ -289,15 +290,16 @@ class Firestore:
         check_response(response=req)
         return req
 
-    def runQuery(self, parent: str = None, json_kwargs: dict = None) -> httpx.Response:
+    def runQuery(self, parent: str = None, json_kwargs: Union[dict, Query] = None) -> httpx.Response:
         """
+        Runs a custom read query
 
         :param parent: The parent resource of the collection to run a structured query against
-        :param json_kwargs: Structured request parameters for the request body of the request
+        :param json_kwargs: Structured request parameters for the request body or custom Query object
         :return: Request response form the Firebase REST API
 
         Examples:
-            json_kwargs ->
+            json_kwargs[dict] ->
                 {
                   "structuredQuery": {
                     object (StructuredQuery)
@@ -312,6 +314,9 @@ class Firestore:
                   // End of list of possible types for union field consistency_selector.
                 }
 
+            json_kwargs[Query] ->
+                Query object, see query.py in package for details
+
         Links: ->
             https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/runQuery
             https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery
@@ -323,7 +328,13 @@ class Firestore:
         params = build_params(key=self.api_key)
 
         with self.client as request:
-            req = request.post(url=url, headers=self.header, params=params, json=json_kwargs, timeout=3)
+            req = request.post(
+                url=url,
+                headers=self.header,
+                params=params,
+                json=json_kwargs if isinstance(json_kwargs, dict) else json_kwargs.to_json(),
+                timeout=3
+            )
 
         check_response(response=req)
         return req

@@ -1,7 +1,7 @@
 import httpx
 
 
-from .services import Auth, Firestore, Database
+from .services import Auth, Firestore
 
 
 def setup(config: dict):
@@ -20,8 +20,3 @@ class Connection:
 
     def firestore(self, idToken: str):
         return Firestore(api_key=self.api_key, project_id=self.project_id, client=self.client, id_token=idToken)
-
-    def database(self, parent: str, idToken: str) -> Database:
-        return Database(
-            parent=parent, api_key=self.api_key, project_id=self.project_id, client=self.client, id_token=idToken
-        )
