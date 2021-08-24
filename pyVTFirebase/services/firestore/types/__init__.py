@@ -1,8 +1,14 @@
-from .structuredQuery import StructuredQuery
+from .structuredQuery import FieldReference, Projection, CollectionSelector, \
+    Order, Direction, StructuredQueryEncoder
 from .query import Query
 
 
 __all__ = (
-    "StructuredQuery",
+    "FieldReference",
+    "Projection",
+    "CollectionSelector",
+    "Order",
+    "Direction",
+    "StructuredQueryEncoder",
     "Query"
 )
