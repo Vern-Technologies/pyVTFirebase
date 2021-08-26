@@ -4,6 +4,8 @@ import enum
 from json import JSONEncoder
 from typing import Any, Tuple
 
+from .value import Value
+
 
 class FieldReference:
     """
@@ -92,6 +94,22 @@ class Order:
 
     def data(self):
         return [{"field": self._field, "direction": self._direction}]
+
+
+class Cursor:
+    """
+    Defines a position in a query result set
+    """
+
+    def __init__(self, values: Value, before: bool):
+        self._values = values
+        self._before = before
+
+    def __repr__(self):
+        return json.dumps({"values": self._values, "before": self._before})
+
+    def data(self):
+        return {"values": self._values, "before": self._before}
 
 
 class StructuredQueryEncoder(JSONEncoder):

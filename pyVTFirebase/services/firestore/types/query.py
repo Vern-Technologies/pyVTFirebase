@@ -1,8 +1,9 @@
 import json
 
-from pyVTFirebase.services.firestore.types import FieldReference, Projection, CollectionSelector, Order, \
-    Direction, StructuredQueryEncoder
-from typing import Iterable, Tuple
+from .structuredQuery import FieldReference, Projection, CollectionSelector, Order, Direction, Cursor, \
+    StructuredQueryEncoder
+from .value import Value
+from typing import Iterable, Tuple, Union
 
 
 class Query(object):
@@ -55,13 +56,15 @@ class Query(object):
             if vars(self)[value]:
                 if value == "_select":
                     data["structuredQuery"]["select"] = vars(self)[value]
-                if value == "_from_coll":
+                elif value == "_from_coll":
                     data["structuredQuery"]["from"] = vars(self)[value]
-                if value == "_orderBy":
+                elif value == "_orderBy":
                     data["structuredQuery"]["orderBy"] = vars(self)[value]
-                if value == "_offset":
+                elif value == "_startAt":
+                    data["structuredQuery"]["startAt"] = vars(self)[value]
+                elif value == "_offset":
                     data["structuredQuery"]["offset"] = vars(self)[value]
-                if value == "_limit":
+                elif value == "_limit":
                     data["structuredQuery"]["limit"] = vars(self)[value]
 
         return json.loads(json.dumps(data, cls=StructuredQueryEncoder))
@@ -105,7 +108,7 @@ class Query(object):
 
         )
 
-    def fromCollection(self, collection: Tuple) -> "Query":
+    def fromCollection(self, collection: Tuple[str, bool]) -> "Query":
         """
         Creates a selection of a collection to query from
 
@@ -149,7 +152,7 @@ class Query(object):
             limit=self._limit
         )
 
-    def order_by(self, field: str, direction: str = "ASCENDING") -> "Query":
+    def orderBy(self, field: str, direction: str = "ASCENDING") -> "Query":
         """
         Creates a order on a field.
 
@@ -191,6 +194,28 @@ class Query(object):
             where=self._where,
             orderBy=order,
             startAt=self._startAt,
+            endAt=self._endAt,
+            offset=self._offset,
+            limit=self._limit
+        )
+
+    def startAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None, before: bool = True):
+        """
+
+        :param key:
+        :param value:
+        :param before:
+        :return:
+        """
+
+        new_start = Cursor(before=before, values=Value(key=key, value=value))
+
+        return self.__class__(
+            select=self._select,
+            from_coll=self._from_coll,
+            where=self._where,
+            orderBy=self._orderBy,
+            startAt=new_start.data(),
             endAt=self._endAt,
             offset=self._offset,
             limit=self._limit

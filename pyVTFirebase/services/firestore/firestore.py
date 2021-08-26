@@ -323,7 +323,6 @@ class Firestore:
         """
 
         validate_json(json_kwargs)
-
         url = build_url(self.base_url, parent, delimiter="runQuery")
         params = build_params(key=self.api_key)
 
