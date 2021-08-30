@@ -10,6 +10,9 @@ from .value import Value
 class FieldReference:
     """
     Defines a reference to a document field
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery#FieldReference
     """
 
     def __init__(self, field_path: str = None):
@@ -25,6 +28,9 @@ class FieldReference:
 class Projection:
     """
     Defines a project of document fields to return
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery#Projection
     """
 
     def __init__(self, fields: list = None):
@@ -50,6 +56,9 @@ class Projection:
 class CollectionSelector:
     """
     Defines a selection of a collection
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery#CollectionSelector
     """
 
     def __init__(self, collections: Tuple = None):
@@ -65,6 +74,9 @@ class CollectionSelector:
 class Direction(enum.Enum):
     """
     Defines a sort direction
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery#Direction
     """
 
     DIRECTION_UNSPECIFIED = "DIRECTION_UNSPECIFIED"
@@ -83,6 +95,9 @@ class Direction(enum.Enum):
 class Order:
     """
     Defines an order on a field
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery#Order
     """
 
     def __init__(self, field: FieldReference, direction: Direction):
@@ -99,6 +114,9 @@ class Order:
 class Cursor:
     """
     Defines a position in a query result set
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/Cursor
     """
 
     def __init__(self, values: Value, before: bool):
@@ -106,10 +124,10 @@ class Cursor:
         self._before = before
 
     def __repr__(self):
-        return json.dumps({"values": self._values, "before": self._before})
+        return json.dumps({"values": [self._values], "before": self._before})
 
     def data(self):
-        return {"values": self._values, "before": self._before}
+        return {"values": [self._values], "before": self._before}
 
 
 class StructuredQueryEncoder(JSONEncoder):

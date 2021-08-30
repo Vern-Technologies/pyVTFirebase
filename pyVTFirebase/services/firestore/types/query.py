@@ -32,14 +32,14 @@ class Query(object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return (
-            self._select == other._select
-            and self._from_coll == other._from_coll
-            and self._where == other._where
-            and self._orderBy == other._orderBy
-            and self._startAt == other._startAt
-            and self._endAt == other._endAt
-            and self._offset == other._offset
-            and self._limit == other._limit
+                self._select == other._select
+                and self._from_coll == other._from_coll
+                and self._where == other._where
+                and self._orderBy == other._orderBy
+                and self._startAt == other._startAt
+                and self._endAt == other._endAt
+                and self._offset == other._offset
+                and self._limit == other._limit
         )
 
     def to_json(self):
@@ -62,6 +62,8 @@ class Query(object):
                     data["structuredQuery"]["orderBy"] = vars(self)[value]
                 elif value == "_startAt":
                     data["structuredQuery"]["startAt"] = vars(self)[value]
+                elif value == "_endAt":
+                    data["structuredQuery"]["endAt"] = vars(self)[value]
                 elif value == "_offset":
                     data["structuredQuery"]["offset"] = vars(self)[value]
                 elif value == "_limit":
@@ -129,15 +131,12 @@ class Query(object):
 
         # Type and size verification
         if len(collection) != 2:
-            raise ValueError(f"Size of Tuple is expected to be 2 elements, not {len(collection)}")
+            raise ValueError(f"Size of collection Tuple is expected to be 2 elements, not {len(collection)}")
 
-        for i, coll in enumerate(collection):
-            if i == 0:
-                if not isinstance(coll, str):
-                    raise TypeError(f"Index 0 of Tuple collection isn't of type String")
-            if i == 1:
-                if not isinstance(coll, bool):
-                    raise TypeError(f"Index 1 of Tuple collection isn't of type Bool")
+        if not isinstance(collection[0], str):
+            raise TypeError(f"Index 0 of collection Tuple has to be of type str not {type(collection[0])}")
+        if not isinstance(collection[1], bool):
+            raise TypeError(f"Index 1 of collection Tuple has to be of type bool not {type(collection[1])}")
 
         new_from_coll = CollectionSelector(collections=collection)
 
@@ -199,7 +198,8 @@ class Query(object):
             limit=self._limit
         )
 
-    def startAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None, before: bool = True):
+    def startAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None,
+                before: bool = True):
         """
 
         :param key:
@@ -207,6 +207,12 @@ class Query(object):
         :param before:
         :return:
         """
+
+        # Type verification
+        if not isinstance(key, str):
+            raise TypeError(f"key must be of type str not {type(key)}")
+        if not isinstance(before, bool):
+            raise TypeError(f"before must be of type bool not {type(before)}")
 
         new_start = Cursor(before=before, values=Value(key=key, value=value))
 
@@ -217,6 +223,35 @@ class Query(object):
             orderBy=self._orderBy,
             startAt=new_start.data(),
             endAt=self._endAt,
+            offset=self._offset,
+            limit=self._limit
+        )
+
+    def endAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None,
+              before: bool = True):
+        """
+
+        :param key:
+        :param value:
+        :param before:
+        :return:
+        """
+
+        # Type verification
+        if not isinstance(key, str):
+            raise TypeError(f"key must be of type str not {type(key)}")
+        if not isinstance(before, bool):
+            raise TypeError(f"before must be of type bool not {type(before)}")
+
+        new_end = Cursor(before=before, values=Value(key=key, value=value))
+
+        return self.__class__(
+            select=self._select,
+            from_coll=self._from_coll,
+            where=self._where,
+            orderBy=self._orderBy,
+            startAt=self._startAt,
+            endAt=new_end.data(),
             offset=self._offset,
             limit=self._limit
         )

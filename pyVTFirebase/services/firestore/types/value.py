@@ -6,11 +6,20 @@ from typing import Union, Tuple
 
 
 class Value:
+    """
+    Defines a message to be used within a cursor
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/Value
+    """
 
     def __init__(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None):
 
         def determine() -> Union[NullValue, BooleanValue, IntegerValue, DoubleValue, TimestampValue, StringValue,
                                  BytesValue, ReferenceValue, GeoPointValue, ArrayValue, MapValue]:
+
+            if not isinstance(key, str):
+                raise TypeError(f"Key must be of type str not {type(key)}")
 
             if key == "null":
                 if value is None:
@@ -76,24 +85,43 @@ class Value:
                     raise TypeError(f"Key array requires parameter value to be of type dict not {type(value)}")
             elif key == "map":
                 if isinstance(value, dict):
+
+                    def raiseError():
+                        raise KeyError(
+                            "Value for key map can only contain 2 elements with the key names 'key' and 'value'")
+
+                    def check(checking: dict):
+                        if len(checking.keys()) != 2:
+                            raiseError()
+
+                        for key_checking in checking.keys():
+                            if key_checking not in ["key", "value"]:
+                                raiseError()
+
+                    check(checking=value)
+                    check(checking=value["value"])
+
                     return MapValue(key=value["key"], value=Value(
                         key=value["value"]["key"], value=value["value"]["value"]))
                 else:
                     raise TypeError(f"Key map requires parameter value to be of type dict not {type(value)}")
             else:
-                raise ValueError("Key doesn't correspond to a known type. Must either be"
+                raise ValueError(f"Key {key} doesn't correspond to a known type. Must either be"
                                  "[null, bool, int, double, time, string, bytes, ref, geo, array, map]")
 
         self._value_type = determine().data()
 
     def __repr__(self):
-        return json.dumps([self._value_type])
+        return json.dumps(self._value_type)
 
     def data(self):
-        return [self._value_type]
+        return self._value_type
 
 
 class NullValue:
+    """
+    Defines a NullValue object of a message
+    """
 
     def __init__(self):
         self._null = "NULL_VALUE"
@@ -106,6 +134,9 @@ class NullValue:
 
 
 class BooleanValue:
+    """
+    Defines a BooleanValue object of a message
+    """
 
     def __init__(self, boolean: bool):
         self._boolean = boolean
@@ -118,6 +149,9 @@ class BooleanValue:
 
 
 class IntegerValue:
+    """
+    Defines a IntegerValue object of a message
+    """
 
     def __init__(self, integer: int):
         self._integer = integer
@@ -130,6 +164,9 @@ class IntegerValue:
 
 
 class DoubleValue:
+    """
+    Defines a DoubleValue object of a message
+    """
 
     def __init__(self, double: float):
         self._double = double
@@ -142,6 +179,12 @@ class DoubleValue:
 
 
 class TimestampValue:
+    """
+    Defines a TimestampValue object of a message
+
+    Pass in your own "Zulu" formatted datetime string or an offset value to have the class define its own. Offset value
+    must be within 0 <= "Offset" <= 269.
+    """
 
     def __init__(self, timestamp: Union[int, str]):
 
@@ -155,7 +198,6 @@ class TimestampValue:
                     raise ValueError(f"Time calculation value supplied: {minus} not within limits 0 <= value <= 269")
 
             time.isoformat()
-
             return time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         self._time = currentTime(minus=timestamp) if isinstance(timestamp, int) else timestamp
@@ -168,6 +210,9 @@ class TimestampValue:
 
 
 class StringValue:
+    """
+    Defines a StringValue object of a message
+    """
 
     def __init__(self, string: str):
         self._string = string
@@ -180,6 +225,9 @@ class StringValue:
 
 
 class BytesValue:
+    """
+    Defines a BytesValue object of a message
+    """
 
     def __init__(self, bytesValue: str):
         self._bytesValue = bytesValue
@@ -192,6 +240,9 @@ class BytesValue:
 
 
 class ReferenceValue:
+    """
+    Defines a ReferenceValue object of a message
+    """
 
     def __init__(self, reference: str):
         self._reference = reference
@@ -205,11 +256,15 @@ class ReferenceValue:
 
 class GeoPointValue:
     """
-    An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees
-    latitude and degrees longitude. Unless specified otherwise, this must conform to the WGS84 standard. Values must
-    be within normalized ranges.
+    Defines a GeoPointValue object of a message
+
+    An object that represents a latitude/longitude pair. This is expressed as a pair of floats to represent degrees
+    latitude and degrees longitude. This must conform to the WGS84 standard. Values must be within normalized ranges.
 
     WGS84 Standards: https://www.unoosa.org/pdf/icg/2012/template/WGS_84.pdf
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/Shared.Types/LatLng
     """
 
     def __init__(self, geo: Tuple[float, float]):
@@ -244,25 +299,37 @@ class GeoPointValue:
 
 
 class ArrayValue:
+    """
+    Defines a ArrayValue object of a message
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/ArrayValue
+    """
 
     def __init__(self, value: Value):
         self._value = value
 
     def __repr__(self):
-        return json.dumps({"arrayValue": {"values": self._value}})
+        return json.dumps({"arrayValue": {"values": [self._value.data()]}})
 
     def data(self):
-        return {"arrayValue": {"values": self._value}}
+        return {"arrayValue": {"values": [self._value.data()]}}
 
 
 class MapValue:
+    """
+    Defines a MapValue object of a message
+
+    Links: ->
+        https://firebase.google.com/docs/firestore/reference/rest/v1/Value#MapValue
+    """
 
     def __init__(self, key: str, value: Value):
         self._key = key
         self._value = value
 
     def __repr__(self):
-        return json.dumps({"mapValue": {"fields": {self._key: {self._value}}}})
+        return json.dumps({"mapValue": {"fields": {self._key: self._value.data()}}})
 
     def data(self):
-        return {"mapValue": {"fields": {self._key: {self._value}}}}
+        return {"mapValue": {"fields": {self._key: self._value.data()}}}
