@@ -1,9 +1,36 @@
-import json
 
-from .structuredQuery import FieldReference, Projection, CollectionSelector, Order, Direction, Cursor, \
-    StructuredQueryEncoder
+import json
+import math
+
+from .structuredQuery import FieldReference, Projection, CollectionSelector, Order, Direction, Cursor, FieldFilter, \
+    FieldFilterOperator, UnaryFilter, UnaryFilterOperator, Filter, StructuredQueryEncoder
 from .value import Value
-from typing import Iterable, Tuple, Union
+
+from typing import Iterable, Tuple, Union, Any
+
+
+_EQ_OP: str
+_operator_enum: Any
+_BAD_OP_STRING: str
+_BAD_OP_NAN_NULL: str
+_KEY: str
+
+_EQ_OP = "=="
+_operator_enum = FieldFilterOperator
+_COMPARISON_OPERATORS = {
+    "<": _operator_enum.LESS_THAN,
+    "<=": _operator_enum.LESS_THAN_OR_EQUAL,
+    ">": _operator_enum.GREATER_THAN,
+    ">=": _operator_enum.GREATER_THAN_OR_EQUAL,
+    _EQ_OP: _operator_enum.EQUAL,
+    "!=": _operator_enum.NOT_EQUAL,
+    "array_contains": _operator_enum.ARRAY_CONTAINS,
+    "in": _operator_enum.IN,
+    "array_contains_any": _operator_enum.ARRAY_CONTAINS_ANY,
+    "not_in": _operator_enum.NOT_IN
+}
+_BAD_OP_STRING = "Operator string {!r} is invalid. Valid choices are: {}."
+_BAD_OP_NAN_NULL = 'Only an equality filter ("==") can be used with None or NaN values'
 
 
 class Query(object):
@@ -58,6 +85,8 @@ class Query(object):
                     data["structuredQuery"]["select"] = vars(self)[value]
                 elif value == "_from_coll":
                     data["structuredQuery"]["from"] = vars(self)[value]
+                elif value == "_where":
+                    data["structuredQuery"]["where"] = vars(self)[value]
                 elif value == "_orderBy":
                     data["structuredQuery"]["orderBy"] = vars(self)[value]
                 elif value == "_startAt":
@@ -151,6 +180,53 @@ class Query(object):
             limit=self._limit
         )
 
+    def where(
+            self,
+            field: str,
+            op: str,
+            key: str = None,
+            value: Union[None, bool, str, bytes, int, float, Tuple[float, float], dict] = None) -> "Query":
+        """
+
+        :param field:
+        :param op:
+        :param key:
+        :param value:
+        :return:
+        """
+
+        # Type verification
+        if not isinstance(field, str):
+            raise TypeError(f"Field is required to be of type str not {type(field)}")
+        if not isinstance(op, str):
+            raise TypeError(f"Op is required to be of type str not {type(op)}")
+        if key:
+            if not isinstance(key, str):
+                raise TypeError(f"Key is required to be of type str not {type(key)}")
+
+        if value is None:
+            if op != _EQ_OP:
+                raise ValueError(_BAD_OP_NAN_NULL)
+            where = Filter(UnaryFilter(field=FieldReference(field_path=field), op=UnaryFilterOperator.IS_NULL))
+        elif _isnan(value):
+            if op != _EQ_OP:
+                raise ValueError(_BAD_OP_NAN_NULL)
+            where = Filter(UnaryFilter(field=FieldReference(field_path=field), op=UnaryFilterOperator.IS_NAN))
+        else:
+            where = Filter(FieldFilter(field=FieldReference(field_path=field), op=_field_filter_op_string(op=op),
+                                       value=Value(key=key, value=value)))
+
+        return self.__class__(
+            select=self._select,
+            from_coll=self._from_coll,
+            where=where.data(),
+            orderBy=self._orderBy,
+            startAt=self._startAt,
+            endAt=self._endAt,
+            offset=self._offset,
+            limit=self._limit
+        )
+
     def orderBy(self, field: str, direction: str = "ASCENDING") -> "Query":
         """
         Creates a order on a field.
@@ -199,13 +275,39 @@ class Query(object):
         )
 
     def startAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None,
-                before: bool = True):
+                before: bool = True) -> "Query":
         """
+        Creates a cursor object that represents a starting position for the query results
 
-        :param key:
-        :param value:
-        :param before:
-        :return:
+        :param key: The type of value object to generate
+        :param value: The value of the value object to generate. Represents a position in the order they appear in the
+                      order by clause of a query.
+        :param before: If the position is just before or just after the given value, relative to the sort order
+                       defined by the query.
+        :return: New instance of the Query class
+
+        Example:
+            key options:
+                'null': Creates a nullValue object. Value parameter isn't required.
+                'bool': Creates a booleanValue object.
+                'int': Creates a integerValue object.
+                'double': Creates a doubleValue object.
+                'time': Creates a timestampValue object.
+                'string': Creates a stringValue object.
+                'bytes': Creates a bytesValue object.
+                'ref': Creates a referenceValue object.
+                'geo': Creates a geoPointValue object.
+                'array': Creates a arrayValue object.
+                'map': Creates a mapValue object.
+
+
+            key: "int"          key: "geo"
+            value: 23           value: (64.8942944, -52.1294764)
+            before: True        before: True
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Cursor
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Value
         """
 
         # Type verification
@@ -228,13 +330,39 @@ class Query(object):
         )
 
     def endAt(self, key: str, value: Union[None, bool, str, int, float, Tuple[float, float], dict] = None,
-              before: bool = True):
+              before: bool = True) -> "Query":
         """
+        Creates a cursor object that represents a ending position for the query results
 
-        :param key:
-        :param value:
-        :param before:
-        :return:
+        :param key: The type of value object to generate
+        :param value: The value of the value object to generate. Represents a position in the order they appear in the
+                      order by clause of a query.
+        :param before: If the position is just before or just after the given value, relative to the sort order
+                       defined by the query.
+        :return: New instance of the Query class
+
+        Example:
+            key options:
+                'null': Creates a nullValue object. Value parameter isn't required.
+                'bool': Creates a booleanValue object.
+                'int': Creates a integerValue object.
+                'double': Creates a doubleValue object.
+                'time': Creates a timestampValue object.
+                'string': Creates a stringValue object.
+                'bytes': Creates a bytesValue object.
+                'ref': Creates a referenceValue object.
+                'geo': Creates a geoPointValue object.
+                'array': Creates a arrayValue object.
+                'map': Creates a mapValue object.
+
+
+            key: "int"          key: "geo"
+            value: 23           value: (64.8942944, -52.1294764)
+            before: True        before: True
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Cursor
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Value
         """
 
         # Type verification
@@ -258,8 +386,8 @@ class Query(object):
 
     def offset(self, offset: int) -> "Query":
         """
-        Offsets the results to return from the start. Applies after all other constraints. Must be greater
-        than 0 if specified.
+        Offsets the results to return from the start. Applies before limit but after all other constraints. Must be
+        greater than 0 if specified.
 
         :param offset: The number of results to skip
         :return: New instance of the Query class
@@ -307,3 +435,36 @@ class Query(object):
             offset=self._offset,
             limit=limit
         )
+
+
+def _isnan(value) -> bool:
+    """
+    Check if a value is NaN
+
+    This differs from ``math.isnan`` in that **any** input type is allowed
+
+    :param value: A value to check for NaN-ness.
+    :return: Indicates if the value is the NaN float
+    """
+    if isinstance(value, float):
+        return math.isnan(value)
+    else:
+        return False
+
+
+def _field_filter_op_string(op: str) -> _operator_enum:
+    """
+    Convert a string representation of a FieldFilterOperator to an enum
+
+    :param op: A comparison operation in the form of a string
+            Acceptable values are (
+                '<', '<=', '>', '>=', '==', '!=', 'array_contains', 'in', 'array_contains_any', 'not_in'
+            )
+    :return: The enum corresponding to the string representation of a FieldFilterOperator
+    """
+    try:
+        return _COMPARISON_OPERATORS[op]
+    except KeyError:
+        choices = ", ".join(sorted(_COMPARISON_OPERATORS.keys()))
+        msg = _BAD_OP_STRING.format(op, choices)
+        raise ValueError(msg)

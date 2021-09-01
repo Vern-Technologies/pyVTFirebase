@@ -52,7 +52,7 @@ class Value:
                 else:
                     raise TypeError(f"Key string requires parameter value to be of type str not {type(value)}")
             elif key == "bytes":
-                if isinstance(value, str):
+                if isinstance(value, bytes):
                     return BytesValue(bytesValue=value)
                 else:
                     raise TypeError(f"Key bytes requires parameter value to be of type str not {type(value)}")
@@ -229,7 +229,7 @@ class BytesValue:
     Defines a BytesValue object of a message
     """
 
-    def __init__(self, bytesValue: str):
+    def __init__(self, bytesValue: bytes):
         self._bytesValue = bytesValue
 
     def __repr__(self):
