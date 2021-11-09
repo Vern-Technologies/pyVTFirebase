@@ -266,4 +266,3 @@ class StructuredQueryEncoder(JSONEncoder):
 
     def default(self, o: Any) -> Any:
         return o.data()
-

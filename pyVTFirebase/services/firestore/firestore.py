@@ -341,4 +341,3 @@ class Firestore:
 
         check_response(response=req)
         return req
-
