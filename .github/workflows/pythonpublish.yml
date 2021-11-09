@@ -1,0 +1,35 @@
+# This workflows will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: publish-pypi
+
+on: push
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pycodestyle setuptools wheel twine
+    - name: Lint with pycodestyle
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        pycodestyle . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        pycodestyle . --count --ignore=E402 --max-line-length=127 --statistics
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.pypi_username }}
+        TWINE_PASSWORD: ${{ secrets.pypi_password }}
+      run: |
+        python pyVTFirebase/setup.py sdist bdist_wheel
+        twine upload dist/*

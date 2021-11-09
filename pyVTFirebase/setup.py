@@ -4,8 +4,8 @@ with open("pyVTFirebase/README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="py_behrtech",
-    version="2021.4.05.2",
+    name="pyVTFirebase",
+    version="2021.11.09.1",
     license="MIT",
     author="Matthew Ashley",
     author_email="matthewashley@verntechnologies.com",

@@ -4,7 +4,6 @@ from pyVTFirebase.services.helpers import build_url, build_params, validate_json
 from pyVTFirebase.exceptions import check_response
 from pyVTFirebase.services.auth import Auth
 from pyVTFirebase.services.firestore.types.query import Query
-
 from typing import Union
 
 
