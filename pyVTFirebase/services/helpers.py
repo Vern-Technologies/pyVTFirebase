@@ -80,12 +80,13 @@ def build_body(**kwargs) -> dict:
 
 
 def _currentTime(minus: int = None) -> str:
-
     time = datetime.datetime.now(datetime.timezone.utc)
 
     if minus:
-        time -= datetime.timedelta(seconds=minus)
+        if 0 <= minus <= 269:
+            time -= datetime.timedelta(seconds=minus)
+        else:
+            raise ValueError(f"Time calculation value supplied: {minus} not within limits 0 <= value <= 269")
 
     time.isoformat()
-
     return time.strftime('%Y-%m-%dT%H:%M:%SZ')
