@@ -59,14 +59,14 @@ class Query(object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return (
-            self._select == other._select and
-            self._from_coll == other._from_coll and
-            self._where == other._where and
-            self._orderBy == other._orderBy and
-            self._startAt == other._startAt and
-            self._endAt == other._endAt and
-            self._offset == other._offset and
-            self._limit == other._limit
+            self._select == other._select
+            and self._from_coll == other._from_coll
+            and self._where == other._where
+            and self._orderBy == other._orderBy
+            and self._startAt == other._startAt
+            and self._endAt == other._endAt
+            and self._offset == other._offset
+            and self._limit == other._limit
         )
 
     def to_json(self):
