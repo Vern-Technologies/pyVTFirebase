@@ -180,19 +180,54 @@ class Query(object):
             limit=self._limit
         )
 
-    def where(
-            self,
-            field: str,
-            op: str,
-            key: str = None,
-            value: Union[None, bool, str, bytes, int, float, Tuple[float, float], dict] = None) -> "Query":
+    def where(self, field: str, op: str, key: str = None,
+              value: Union[None, bool, str, bytes, int, float, Tuple[float, float], dict] = None) -> "Query":
         """
+        Creates a filter on a document field
 
-        :param field:
-        :param op:
-        :param key:
-        :param value:
-        :return:
+        :param field: The document field to do the comparison on
+        :param op: The comparative operator that compares the field parameter to the value parameter
+        :param key: The type of value object to generate
+        :param value: The value of the value object to generate. Is the value that the field parameter is compared to.
+        :return: New instance of the Query class
+
+        Example:
+            field: "Amount"
+            op: ">="
+                op options:
+                    "<": _operator_enum.LESS_THAN,
+                    "<=": _operator_enum.LESS_THAN_OR_EQUAL,
+                    ">": _operator_enum.GREATER_THAN,
+                    ">=": _operator_enum.GREATER_THAN_OR_EQUAL,
+                    "==": _operator_enum.EQUAL,
+                    "!=": _operator_enum.NOT_EQUAL,
+                    "array_contains": _operator_enum.ARRAY_CONTAINS,
+                    "in": _operator_enum.IN,
+                    "array_contains_any": _operator_enum.ARRAY_CONTAINS_ANY,
+                    "not_in": _operator_enum.NOT_IN
+            key: "int"
+                key options:
+                    'null': Creates a nullValue object. Value parameter isn't required.
+                    'bool': Creates a booleanValue object.
+                    'int': Creates a integerValue object.
+                    'double': Creates a doubleValue object.
+                    'time': Creates a timestampValue object.
+                    'string': Creates a stringValue object.
+                    'bytes': Creates a bytesValue object.
+                    'ref': Creates a referenceValue object.
+                    'geo': Creates a geoPointValue object.
+                    'array': Creates a arrayValue object.
+                    'map': Creates a mapValue object.
+            value: 25
+
+
+            key: "int"          key: "geo"
+            value: 23           value: (64.8942944, -52.1294764)
+            before: True        before: True
+
+        Links: ->
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Cursor
+            https://firebase.google.com/docs/firestore/reference/rest/v1/Value
         """
 
         # Type verification
@@ -229,9 +264,9 @@ class Query(object):
 
     def orderBy(self, field: str, direction: str = "ASCENDING") -> "Query":
         """
-        Creates a order on a field.
+        Creates a order on a document field
 
-        Multiple calls of this function will add order conditions to the Query object.
+        Multiple calls of this function will add order conditions to the Query object
 
         :param field: The field of documents to order by
         :param direction: The direction to order by. Defaults to ASCENDING.

@@ -321,7 +321,12 @@ class Firestore:
             https://firebase.google.com/docs/firestore/reference/rest/v1/StructuredQuery
         """
 
-        validate_json(json_kwargs)
+        json_data = json_kwargs
+
+        if isinstance(json_data, Query):
+            json_data = json_data.to_json()
+
+        validate_json(json_data)
         url = build_url(self.base_url, parent, delimiter="runQuery")
         params = build_params(key=self.api_key)
 
@@ -330,7 +335,7 @@ class Firestore:
                 url=url,
                 headers=self.header,
                 params=params,
-                json=json_kwargs if isinstance(json_kwargs, dict) else json_kwargs.to_json(),
+                json=json_data,
                 timeout=3
             )
 
