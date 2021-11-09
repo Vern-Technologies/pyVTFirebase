@@ -1,9 +1,9 @@
+
 import json
 import enum
 
 from json import JSONEncoder
 from typing import Any, Tuple, Union
-
 from .value import Value
 
 

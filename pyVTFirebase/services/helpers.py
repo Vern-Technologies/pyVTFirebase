@@ -45,13 +45,13 @@ def build_params(**kwargs) -> dict:
     return params
 
 
-def validate_json(*args: Union[dict, Query]):
+def validate_json(*args: dict):
     for _sub in args:
         try:
             if isinstance(_sub, dict):
                 return json.loads(json.dumps(_sub))
-            elif isinstance(_sub, Query):
-                return json.loads(json.dumps(_sub.to_json()))
+            else:
+                raise ValueError(f"Passed value must be of type {type({})} not {type(_sub)}")
         except Exception as e:
             raise ValueError(f"Invalid json: {e}")
 
@@ -80,12 +80,13 @@ def build_body(**kwargs) -> dict:
 
 
 def _currentTime(minus: int = None) -> str:
-
     time = datetime.datetime.now(datetime.timezone.utc)
 
     if minus:
-        time -= datetime.timedelta(seconds=minus)
+        if 0 <= minus <= 269:
+            time -= datetime.timedelta(seconds=minus)
+        else:
+            raise ValueError(f"Time calculation value supplied: {minus} not within limits 0 <= value <= 269")
 
     time.isoformat()
-
     return time.strftime('%Y-%m-%dT%H:%M:%SZ')
